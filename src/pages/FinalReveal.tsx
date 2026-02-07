@@ -1,12 +1,21 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
-// Placeholder images - user will replace with actual images of Medha
-const PLACEHOLDER_IMAGES = [
+// ============================================
+// ADD YOUR IMAGES HERE - Just add more items to this array!
+// You can use local paths (e.g., "/images/photo1.jpg") or URLs
+// ============================================
+const SLIDESHOW_IMAGES: string[] = [
+  // Example entries - replace with your actual images:
   "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1920&q=80",
   "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=1920&q=80",
   "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=1920&q=80",
   "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=1920&q=80",
+  // Add more images below:
+  // "/images/medha1.jpg",
+  // "/images/medha2.jpg",
+  // "/images/medha3.jpg",
+  // ... add as many as you want!
 ];
 
 const FinalReveal = () => {
@@ -25,10 +34,12 @@ const FinalReveal = () => {
   const textOpacity = useTransform(scrollYProgress, [0.1, 0.3], [0, 1]);
   const textY = useTransform(scrollYProgress, [0.1, 0.3], [50, 0]);
 
-  // Image slideshow
+  // Image slideshow - loops through all images
   useEffect(() => {
+    if (SLIDESHOW_IMAGES.length <= 1) return;
+    
     const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % PLACEHOLDER_IMAGES.length);
+      setCurrentImageIndex((prev) => (prev + 1) % SLIDESHOW_IMAGES.length);
     }, 4000);
 
     return () => clearInterval(interval);
@@ -78,9 +89,9 @@ const FinalReveal = () => {
         {/* User will add source: <source src="/your-song.mp3" type="audio/mpeg" /> */}
       </audio>
 
-      {/* Background slideshow */}
+      {/* Background slideshow - supports unlimited images */}
       <div className="fixed inset-0 overflow-hidden">
-        {PLACEHOLDER_IMAGES.map((src, index) => (
+        {SLIDESHOW_IMAGES.map((src, index) => (
           <motion.div
             key={index}
             className="absolute inset-0"
