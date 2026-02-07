@@ -2,8 +2,6 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 
-// Chime sound as base64 (short soft bell)
-const CHIME_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleS4PT5rO3bF2Jg1Fkc7dpHEjDEqR0NmhcCYPT5XL2J1sJBFTlMvUnmsQE1qUzNOXZhEWXpPK0pNiEhhglMrPjl8UG2SVyc2KWBQZY5bJypJlFRxnl8jIj2EWHWqYxsaMXBUca5rGxolYFBxsmsbFh1UVHGyayMSGUhMbbZvJw4RQERpvnMnChE8SEHGdy8KCTRAQc53LwYJNEBFznczBgk4QEnOdzMGCThATc5zMwYFNEBRznMvBgEwQFnOcysGASxAYc5zKwH9KEBlzmsnAfUkPGnObyMB8SQ8bcp3HwHtIDxtzncbAe0gQG3Odx8B7SBAbc53GwHtIEBtzncbAe0gQG3Ocxr96RxAcc5zGv3pHEBxznMa/eUcQHHOcxr96RxAcc53Gv3lHDx1zncW/ekcPHXOdxb95Rw8dc53Fv3lGDx5znsS/eEYPHnOexL94Rg8ec57Ev3hGDx5znsS+eEYOH3Ofw754RQ4fc5/DvnhFDh9zn8O+eEUOH3Ofw754RQ4fc5/DvnhFDh9zn8O+eEUOH3Oew754RA4gc5/DvXhEDiBzn8O9eEQOIHOfw714RA4gc5/DvXhEDiBzn8O9eEQNIXSgwr14Qw0hdKDCvXhDDSF0oMK9eEMNIXSgwr14Qw0hdKDCvXhDDSF0oMK9eEMMInShwbx3QgwidKHBvHdCDCJ0ocG8d0IMInShwbx3QgwidKHBvHdCDCJ0ocG8d0ILI3Siwbt2QQsjdKLBu3ZBCyN0osG7dkELI3Siwbt2QQsjdKLBu3ZBCyN0osG7dkEKJHWjwLp1QAokdaPAunVACiR1o8C6dUAKJHWjwLp1QAokdaPAunVACiR1o8C6dT8KJXakv7l0PwoldqS/uXQ/CiV2pL+5dD8KJXakv7l0PwoldqS/uXQ/CiV1pL+5dD8JJnakvrl0PgkmdrS+uHQ+CSZ2tL64dD4JJna0vrh0PgkmdrS+uHQ+CSZ2tL64dD4JJna0vrh0PQkndrW9t3M9CSd2tb23cz0JJ3a1vbdzPQkndrW9t3M9CSd2tb23cz0JJ3a1vbdzPAkod7a8tnI8CCh3tryydjwIKHe2vLZyPAgod7a8tnI8CCh3tryydjwIKHe2vLZyPAgod7a8snY7CCl3t7u1cTsIKXe3u7VxOwgpd7e7tXE7CCl3t7u1cTsIKXe3u7VxOwgpd7e7tXE6CCp4uLq0cDoIKni4urRwOggqeLi6tHA6CCp4uLq0cDoIKni4urRwOggqeLi6tHA5CSt4ubmzbzkJK3i5ubNvOQkreLm5s285CSt4ubmzbzkJK3i5ubNvOQkreLm5s285CCtpubmzbTkILHm6uLJuOQgsebi4sm45CCx5uriybTkILHm5uLJuOQgsebi4sm05CCx5ubiybjkILHm5uLJuOAgterl4sW04CC16uXixbTgILXq5eLFtOAgterl4sW04CC16uXixbTgILXq5eLBtOAgte7l3sWw4CC17t3iwbDgILXu3eLBsOAgte7d4sGw4CC17t3iwbDgILXu3eLBsNwgutrh3r2s3CC62uHevazcILra4d69rNwgutrh3r2s3CC62uHevazcILra4d69qNwgvt7h2rmo3CC+2uHauajcIL7a4dq5qNwgvtrh2rmo3CC+2uHauajcIL7a4dq5qNgkwt7d1rWk2CTG3t3WtaTYJMbe3da1pNgkxtrZ1rWk2CTG2tnWtaTYJMba2da1pNgkxtrZ1rWk1CTK1tnSsaDUJMrW2dKxoNQkytbZ0rGg1CTK1tnSsaDUJMrW2dKxoNQkytbZ0rGg1CTK1tnSsaDUJMrW2dKxoNQk=";
 
 const FloatingElement = ({ 
   className, 
@@ -80,7 +78,6 @@ const FloralSilhouette = ({
 const ValentineLanding = () => {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Animation sequence states
   const [showDot, setShowDot] = useState(true);
@@ -165,12 +162,6 @@ const ValentineLanding = () => {
   };
 
   const handleYes = () => {
-    // Play chime
-    if (!audioRef.current) {
-      audioRef.current = new Audio(CHIME_SOUND);
-    }
-    audioRef.current.play().catch(() => {});
-    
     // Brief flash then navigate
     const flash = document.createElement("div");
     flash.style.cssText = `
@@ -204,18 +195,18 @@ const ValentineLanding = () => {
           100% { opacity: 0; }
         }
         @keyframes glow-pulse {
-          0%, 100% { box-shadow: 0 0 40px hsl(174 42% 45% / 0.4); }
-          50% { box-shadow: 0 0 60px hsl(174 42% 45% / 0.6), 0 0 80px hsl(174 42% 45% / 0.3); }
+          0%, 100% { box-shadow: 0 0 30px hsl(174 42% 45% / 0.25); }
+          50% { box-shadow: 0 0 45px hsl(174 42% 45% / 0.35); }
         }
         .btn-yes-enhanced {
-          animation: glow-pulse 3s ease-in-out infinite;
+          animation: glow-pulse 4s ease-in-out infinite;
         }
         .btn-yes-enhanced:hover::after {
           content: '';
           position: absolute;
           inset: -4px;
           border-radius: 9999px;
-          background: radial-gradient(circle at center, hsl(174 42% 55% / 0.4) 0%, transparent 70%);
+          background: radial-gradient(circle at center, hsl(174 42% 55% / 0.3) 0%, transparent 70%);
           animation: ripple 0.6s ease-out;
         }
         @keyframes ripple {
