@@ -4,9 +4,8 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  // IMPORTANT: must match your repo name EXACTLY
   base: "/medha-s-proposal/",
-  
+
   server: {
     host: "::",
     port: 8080,
@@ -15,10 +14,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
 
-  plugins: [
-    react(),
-    mode === "development" && componentTagger(),
-  ].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
 
   resolve: {
     alias: {
