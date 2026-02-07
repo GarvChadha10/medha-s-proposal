@@ -1,10 +1,13 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const ChaosPage = () => {
   const navigate = useNavigate();
   const [canClick, setCanClick] = useState(false);
+  const [audioStarted, setAudioStarted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     // Allow clicking after 3 seconds
@@ -14,6 +17,65 @@ const ChaosPage = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Audio + video playback (mirrors FinalReveal logic)
+  useEffect(() => {
+    const playBothWithFallback = async () => {
+      if (!audioRef.current || !videoRef.current || audioStarted) return;
+
+      try {
+        // try to start video first then audio so visual starts immediately
+        await videoRef.current.play();
+        await audioRef.current.play();
+        setAudioStarted(true);
+        return;
+      } catch (e) {
+        // audio blocked — try muted audio autoplay then unmute
+        try {
+          audioRef.current.muted = true;
+          await audioRef.current.play();
+          // ensure video is playing
+          videoRef.current.play().catch(() => {});
+          setAudioStarted(true);
+
+          setTimeout(() => {
+            try {
+              if (audioRef.current) {
+                audioRef.current.muted = false;
+                audioRef.current.volume = 1;
+              }
+            } catch {}
+          }, 300);
+          return;
+        } catch (err) {
+          // rely on user interaction fallback
+        }
+      }
+    };
+
+    playBothWithFallback();
+
+    const handleInteraction = () => {
+      if (videoRef.current) videoRef.current.play().catch(() => {});
+      if (audioRef.current && !audioStarted) {
+        audioRef.current.play().then(() => {
+          setAudioStarted(true);
+          try {
+            audioRef.current.muted = false;
+            audioRef.current.volume = 1;
+          } catch {}
+        }).catch(() => {});
+      }
+    };
+
+    document.addEventListener("click", handleInteraction, { once: true });
+    document.addEventListener("scroll", handleInteraction, { once: true });
+
+    return () => {
+      document.removeEventListener("click", handleInteraction);
+      document.removeEventListener("scroll", handleInteraction);
+    };
+  }, [audioStarted]);
 
   const handleClick = () => {
     if (canClick) {
@@ -113,32 +175,22 @@ const ChaosPage = () => {
             ease: "easeInOut",
           }}
         >
-          {/* Video placeholder - replace src with actual video */}
-          <div className="w-80 h-60 md:w-[500px] md:h-[375px] bg-card flex items-center justify-center">
+          {/* Video container with absolute positioning */}
+          <div className="relative w-80 h-60 md:w-[500px] md:h-[375px] bg-card flex items-center justify-center overflow-hidden">
             <video
-              className="w-full h-full object-cover"
+              ref={videoRef}
+              className="w-full h-full object-cover absolute inset-0"
               autoPlay
               loop
               muted
               playsInline
             >
-              {/* User will add their video source here */}
-              <source src="" type="video/mp4" />
-              {/* Fallback content */}
+              <source src="/chaos.mp4" type="video/mp4" />
             </video>
-            
-            {/* Placeholder when no video */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-card">
-              <motion.span 
-                className="text-6xl mb-4"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 0.5, repeat: Infinity }}
-              >
-                😤
-              </motion.span>
-              <p className="text-muted-foreground text-sm">Video placeholder</p>
-              <p className="text-muted-foreground/50 text-xs mt-1">Add your video here</p>
-            </div>
+            {/* Background audio element (uses /audio.mp3 uploaded by you) */}
+            <audio ref={audioRef} loop preload="auto" playsInline style={{ display: "none" }}>
+              <source src="/audio.mp3" type="audio/mpeg" />
+            </audio>
           </div>
         </motion.div>
 

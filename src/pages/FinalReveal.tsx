@@ -1,16 +1,25 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
+// Import local images so Vite can bundle/serve them correctly
+import img1 from "./img1.jpeg";
+import img2 from "./img2.jpeg";
+import img3 from "./img3.jpeg";
+import img4 from "./img4.jpeg";
+import img5 from "./img5.jpeg";
+import img6 from "./img6.jpeg";
 // ============================================
 // ADD YOUR IMAGES HERE - Just add more items to this array!
 // You can use local paths (e.g., "/images/photo1.jpg") or URLs
 // ============================================
 const SLIDESHOW_IMAGES: string[] = [
-  // Example entries - replace with your actual images:
-  "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1920&q=80",
-  "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=1920&q=80",
-  "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=1920&q=80",
-  "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=1920&q=80",
+  // Local images imported above (Vite will resolve these paths)
+  img2,
+  img1,
+  img3,
+  img4,
+  img5,
+  img6,
   // Add more images below:
   // "/images/medha1.jpg",
   // "/images/medha2.jpg",
@@ -30,7 +39,8 @@ const FinalReveal = () => {
   });
 
   const backgroundBlur = useTransform(scrollYProgress, [0, 0.3], [0, 20]);
-  const backgroundOpacity = useTransform(scrollYProgress, [0, 0.3], [0.15, 0.08]);
+  // Increase opacity so background images are more visible behind the overlay
+  const backgroundOpacity = useTransform(scrollYProgress, [0, 0.3], [0.5, 0.3]);
   const textOpacity = useTransform(scrollYProgress, [0.1, 0.3], [0, 1]);
   const textY = useTransform(scrollYProgress, [0.1, 0.3], [50, 0]);
 
@@ -47,24 +57,51 @@ const FinalReveal = () => {
 
   // Attempt to play audio
   useEffect(() => {
-    const playAudio = async () => {
-      if (audioRef.current && !audioStarted) {
+    const playAudioWithFallback = async () => {
+      if (!audioRef.current || audioStarted) return;
+
+      try {
+        // Try to play normally first
+        await audioRef.current.play();
+        setAudioStarted(true);
+        return;
+      } catch (e) {
+        // Normal autoplay blocked. Try playing muted (browsers usually allow muted autoplay),
+        // then attempt to unmute after a short delay.
         try {
+          audioRef.current.muted = true;
           await audioRef.current.play();
           setAudioStarted(true);
-        } catch {
-          // Autoplay was prevented, we'll try on user interaction
-          console.log("Autoplay prevented, waiting for user interaction");
+
+          // Attempt to unmute after a brief delay; this may still be blocked by some browsers,
+          // but it's safe to try and does not show any UI.
+          setTimeout(() => {
+            try {
+              if (audioRef.current) {
+                audioRef.current.muted = false;
+                audioRef.current.volume = 1;
+              }
+            } catch {}
+          }, 300);
+          return;
+        } catch (err) {
+          // Muted playback also blocked — we'll rely on user interaction fallback below.
         }
       }
     };
 
-    playAudio();
+    playAudioWithFallback();
 
-    // Try to play on any user interaction
+    // Final fallback: try to start audio on first user interaction
     const handleInteraction = () => {
       if (audioRef.current && !audioStarted) {
-        audioRef.current.play().then(() => setAudioStarted(true)).catch(() => {});
+        audioRef.current.play().then(() => {
+          setAudioStarted(true);
+          try {
+            audioRef.current.muted = false;
+            audioRef.current.volume = 1;
+          } catch {}
+        }).catch(() => {});
       }
     };
 
@@ -84,9 +121,11 @@ const FinalReveal = () => {
         ref={audioRef}
         loop
         preload="auto"
+        playsInline
+        // keep hidden UI but attempt autoplay with fallback logic above
         style={{ display: "none" }}
       >
-        {/* User will add source: <source src="/your-song.mp3" type="audio/mpeg" /> */}
+        <source src="/song.mp3" type="audio/mpeg" />
       </audio>
 
       {/* Background slideshow - supports unlimited images */}
@@ -113,10 +152,10 @@ const FinalReveal = () => {
           </motion.div>
         ))}
         
-        {/* Dark overlay for text readability */}
-        <div 
-          className="absolute inset-0"
-          style={{ background: "var(--gradient-dark)" }}
+        {/* Dark overlay for text readability (semi-transparent so images show through) */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "var(--gradient-dark)", opacity: 0.35 }}
         />
       </div>
 
@@ -174,8 +213,8 @@ const FinalReveal = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              Every day with you feels like a gift. You make the ordinary moments feel magical, 
-              and I find myself falling more in love with you with each passing day.
+              Every facetime with you feels like a gift. You make ordinary moments feel magical, 
+              and I find myself more obsessed with you with each passing day.
             </motion.p>
 
             <motion.p
@@ -183,8 +222,8 @@ const FinalReveal = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              You are my best friend, my confidant, and my greatest adventure. 
-              I can't imagine my life without you in it.
+              You are my best friend, my warrior, and my goat. 
+              I can't imagine my life without you in it anymore mini G.
             </motion.p>
 
             <motion.p
@@ -193,7 +232,7 @@ const FinalReveal = () => {
               transition={{ delay: 0.6 }}
               className="text-gradient-purple font-heading text-2xl md:text-3xl text-center pt-4"
             >
-              Happy Valentine's Day, my love.
+              Happy Valentine's Day, lil bro.
             </motion.p>
 
             <motion.p
