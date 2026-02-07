@@ -1,228 +1,104 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 
 const ChaosPage = () => {
   const navigate = useNavigate();
-  const [canClick, setCanClick] = useState(false);
-  const [audioStarted, setAudioStarted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const [started, setStarted] = useState(false);
+  const [canLeave, setCanLeave] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  useEffect(() => {
-    // Allow clicking after 3 seconds
-    const timer = setTimeout(() => {
-      setCanClick(true);
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Audio + video playback (mirrors FinalReveal logic)
-  useEffect(() => {
-    const playBothWithFallback = async () => {
-      if (!audioRef.current || !videoRef.current || audioStarted) return;
+  const handleFirstInteraction = async () => {
+    // FIRST click → start chaos
+    if (!started) {
+      setStarted(true);
 
       try {
-        // try to start video first then audio so visual starts immediately
-        await videoRef.current.play();
-        await audioRef.current.play();
-        setAudioStarted(true);
-        return;
-      } catch (e) {
-        // audio blocked — try muted audio autoplay then unmute
-        try {
-          audioRef.current.muted = true;
-          await audioRef.current.play();
-          // ensure video is playing
-          videoRef.current.play().catch(() => {});
-          setAudioStarted(true);
-
-          setTimeout(() => {
-            try {
-              if (audioRef.current) {
-                audioRef.current.muted = false;
-                audioRef.current.volume = 1;
-              }
-            } catch {}
-          }, 300);
-          return;
-        } catch (err) {
-          // rely on user interaction fallback
+        if (videoRef.current) {
+          videoRef.current.currentTime = 0;
+          await videoRef.current.play();
         }
+
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          await audioRef.current.play();
+        }
+      } catch (e) {
+        console.log("Playback blocked:", e);
       }
-    };
 
-    playBothWithFallback();
+      // allow leaving after 4 sec
+      setTimeout(() => {
+        setCanLeave(true);
+      }, 4000);
 
-    const handleInteraction = () => {
-      if (videoRef.current) videoRef.current.play().catch(() => {});
-      if (audioRef.current && !audioStarted) {
-        audioRef.current.play().then(() => {
-          setAudioStarted(true);
-          try {
-            audioRef.current.muted = false;
-            audioRef.current.volume = 1;
-          } catch {}
-        }).catch(() => {});
-      }
-    };
+      return;
+    }
 
-    document.addEventListener("click", handleInteraction, { once: true });
-    document.addEventListener("scroll", handleInteraction, { once: true });
-
-    return () => {
-      document.removeEventListener("click", handleInteraction);
-      document.removeEventListener("scroll", handleInteraction);
-    };
-  }, [audioStarted]);
-
-  const handleClick = () => {
-    if (canClick) {
+    // SECOND click → go back
+    if (canLeave) {
       navigate("/");
     }
   };
 
-  // Generate floating warning text positions
-  const warningTexts = Array.from({ length: 12 }, (_, i) => ({
-    id: i,
-    top: `${Math.random() * 80 + 10}%`,
-    left: `${Math.random() * 80 + 10}%`,
-    delay: Math.random() * 2,
-    duration: 2 + Math.random() * 2,
-  }));
-
   return (
     <motion.div
-      className="relative min-h-screen overflow-hidden flex items-center justify-center cursor-pointer"
-      onClick={handleClick}
+      onClick={handleFirstInteraction}
+      className="relative min-h-screen flex items-center justify-center cursor-pointer overflow-hidden"
       style={{ background: "var(--gradient-chaos)" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Grain overlay */}
-      <div className="grain-overlay" />
 
-      {/* Pulsing red/purple overlay */}
-      <motion.div
-        className="absolute inset-0 chaos-bg"
-        style={{
-          background: "radial-gradient(ellipse at center, hsl(0 60% 20% / 0.3) 0%, transparent 70%)",
-        }}
-      />
-
-      {/* Floating warning texts */}
-      {warningTexts.map((item) => (
-        <motion.div
-          key={item.id}
-          className="absolute text-destructive/30 font-bold text-xl pointer-events-none select-none"
-          style={{ top: item.top, left: item.left }}
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: [0.1, 0.4, 0.1],
-          }}
-          transition={{
-            delay: item.delay,
-            duration: item.duration,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          🚨 WARNING 🚨
-        </motion.div>
-      ))}
-
-      {/* Alarm emoji borders */}
-      <motion.div 
-        className="absolute top-0 left-0 right-0 flex justify-around py-4 text-3xl"
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1, repeat: Infinity }}
+      {/* Video */}
+      <video
+        ref={videoRef}
+        className="absolute inset-0 w-full h-full object-cover"
+        playsInline
+        preload="auto"
       >
-        {Array.from({ length: 8 }, (_, i) => (
-          <span key={i}>🚨</span>
-        ))}
-      </motion.div>
+        <source src="/chaos.mp4" type="video/mp4" />
+      </video>
 
-      <motion.div 
-        className="absolute bottom-0 left-0 right-0 flex justify-around py-4 text-3xl"
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
-      >
-        {Array.from({ length: 8 }, (_, i) => (
-          <span key={i}>🚨</span>
-        ))}
-      </motion.div>
+      {/* Audio */}
+      <audio ref={audioRef} preload="auto">
+        <source src="/audio.mp3" type="audio/mpeg" />
+      </audio>
 
-      {/* Main content */}
-      <motion.div
-        className="relative z-10 text-center px-6"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-      >
-        {/* Video container */}
-        <motion.div
-          className="relative mb-8 rounded-2xl overflow-hidden border-4 border-destructive/50 shadow-2xl"
-          style={{ boxShadow: "0 0 60px hsl(0 70% 50% / 0.3)" }}
-          animate={{ 
-            rotate: [-1, 1, -1],
-            scale: [1, 1.02, 1],
-          }}
-          transition={{
-            duration: 0.3,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          {/* Video container with absolute positioning */}
-          <div className="relative w-80 h-60 md:w-[500px] md:h-[375px] bg-card flex items-center justify-center overflow-hidden">
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover absolute inset-0"
-              autoPlay
-              loop
-              muted
-              playsInline
-            >
-              <source src="/chaos.mp4" type="video/mp4" />
-            </video>
-            {/* Background audio element (uses /audio.mp3 uploaded by you) */}
-            <audio ref={audioRef} loop preload="auto" playsInline style={{ display: "none" }}>
-              <source src="/audio.mp3" type="audio/mpeg" />
-            </audio>
-          </div>
-        </motion.div>
-
-        {/* ARE YOU MAD text */}
+      {/* Text */}
+      {!started && (
         <motion.h1
-          className="font-heading text-5xl md:text-7xl lg:text-8xl font-bold"
-          style={{ 
-            color: "hsl(0 70% 55%)",
-            textShadow: "0 0 40px hsl(0 70% 50% / 0.5)",
-          }}
-          animate={{
-            scale: [1, 1.05, 1],
-          }}
-          transition={{
-            duration: 0.4,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          className="z-10 text-white text-5xl md:text-7xl font-bold text-center px-6"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1, repeat: Infinity }}
+        >
+          Tap the screen.
+        </motion.h1>
+      )}
+
+      {started && !canLeave && (
+        <motion.h1
+          className="z-10 text-red-500 text-6xl md:text-8xl font-bold text-center"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 0.3, repeat: Infinity }}
         >
           ARE YOU MAD??
         </motion.h1>
+      )}
 
-        {/* Click to go back hint */}
+      {canLeave && (
         <motion.p
-          className="mt-12 text-muted-foreground text-sm"
+          className="absolute bottom-10 text-white/70 text-sm"
           initial={{ opacity: 0 }}
-          animate={{ opacity: canClick ? 0.7 : 0 }}
-          transition={{ duration: 0.5 }}
+          animate={{ opacity: 1 }}
         >
-          Click anywhere to go back and reconsider...
+          Tap again to go back
         </motion.p>
-      </motion.div>
+      )}
     </motion.div>
   );
 };
